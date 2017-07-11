@@ -1,0 +1,45 @@
+version: '2'
+
+services:
+    postgres:
+        build: .docker/postgres
+        ports:
+            - 5432:5432
+        volumes:
+            - db_data:/var/lib/postgresql/data
+        environment:
+            - POSTGRES_PASSWORD=pg01
+            - POSTGRES_USER=postgres
+            - POSTGRES_DB=sf
+    php:
+        build: .docker/php
+        ports:
+            - 9000:9000
+        depends_on:
+            - postgres
+        environment:
+            - DB_CONNECTION=pgsql
+            - DB_HOST=192.168.99.100
+            - DB_DATABASE=sf
+            - DB_USERNAME=postgres
+            - DB_PASSWORD=pg01
+        restart: always
+        volumes:
+            - .:/var/www/html
+    web:
+        build: .docker/web
+        ports:
+            - 80:80
+            - 443:443
+        volumes_from:
+            - php
+        volumes:
+            - .docker/web/certs:/etc/nginx/ssl
+            - .docker/web/conf.d:/etc/nginx/conf.d
+        depends_on:
+            - php
+        links:
+            - php
+        restart: always
+volumes:
+    db_data:
